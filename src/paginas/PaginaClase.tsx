@@ -1,8 +1,15 @@
-import { Link, useNavigate, useParams } from 'react-router';
+import { Link, useLocation, useNavigate, useParams } from 'react-router';
 import { Cargando } from '../componentes/Cargando.tsx';
 import { MensajeError } from '../componentes/MensajeError.tsx';
 import { useClase } from '../hooks/useClase.ts';
-import { urlImagen } from '../servicios/api.ts';
+import { urlImagen, estadoDeError } from '../servicios/api.ts';
+import { useSesion } from '../sesion/SesionContext.tsx';
+import { useState } from 'react';
+
+interface Aviso {
+  mensaje: string;
+  tipo: 'exito' | 'error';
+}
 
 export function PaginaClase() {
   const { id } = useParams();
@@ -10,17 +17,44 @@ export function PaginaClase() {
   const idClase = Number(id);
   const { clase, cargando, error, reintentar } = useClase(idClase);
 
+  const navegar = useNavigate();
+
+  const ubicacion = useLocation();
+
+  const usuario = useSesion();
+
+  const [aviso, setAviso] = useState<Aviso | null>(null);
+
   if (cargando) return <Cargando />;
   if (error) return <MensajeError mensaje={error} onReintentar={reintentar} />;
   if (!clase) return null;
 
+  async function inscribir(horarioId: number) {
+    if (!usuario) {
+      setAviso({ mensaje: 'Necesitas iniciar sesión para inscribirte.', tipo: 'error' });
+      return;
+    }
+
+    try {
+      await inscribir(horarioId);
+      navegar('/mis-inscripciones');
+    }catch (e) {
+      if (estadoDeError(e) === 409) {
+        setAviso({ tipo: 'error', mensaje: 'Ya te encuentras inscrito en esta clase.' });
+      }else {
+        setAviso({ tipo: 'error', mensaje: 'No se pudo completar la inscripcion' });
+      }
+    }
+  }
+
   return (
     <>
-      <Link to="/clases" className="detalle__volver">
+      <Link to="/clases" className="detalle__volver">   
         ← Todas las clases
       </Link>
 
       <article className="detalle">
+        {aviso && <p role="status">{aviso.mensaje}</p>}
         <img
           className="detalle__imagen"
           src={urlImagen(clase.imagen)}
@@ -38,6 +72,7 @@ export function PaginaClase() {
           </p>
 
           <h2>Horarios</h2>
+          {aviso && <p className={`aviso aviso--${aviso.tipo}`}>{aviso.mensaje}</p>}
           <ul className="horarios">
             {clase.horarios.map((horario) => (
               <li className="horario" key={horario.id}>
@@ -55,7 +90,7 @@ export function PaginaClase() {
                 ) : (
                   <button
                     className="boton boton--chico"
-                    onClick={() => navigate('/entrar')}
+                    onClick={() => inscribir(horario.id)}
                   >
                     Inscribirme
                   </button>

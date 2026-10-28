@@ -1,11 +1,14 @@
 import { useState, type FormEvent } from 'react';
-import { Link, useNavigate } from 'react-router';
+import { Link, useLocation, useNavigate } from 'react-router';
 import { useSesion } from '../sesion/SesionContext.tsx';
 import { mensajeDeError } from '../servicios/api.ts';
 
 export default function PaginaEntrar() {
   const { entrar } = useSesion();
   const navegar = useNavigate();
+
+  const desde = (useLocation().state as{desde?: string} | null)?.desde ?? '/clases';
+
   const [correo, setCorreo] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
@@ -18,7 +21,7 @@ export default function PaginaEntrar() {
 
     try {
       await entrar(correo, password);
-      navegar('/clases');
+      navegar(desde);
     } catch (e) {
       setError(mensajeDeError(e, 'No se pudo iniciar sesión.'));
     } finally {

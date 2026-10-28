@@ -5,6 +5,8 @@ import { PaginaClase } from './paginas/PaginaClase.tsx';
 import { PaginaClases } from './paginas/PaginaClases.tsx';
 import PaginaEntrar from './paginas/PaginaEntrar.tsx';
 import PaginaRegistro from './paginas/PaginaRegistro.tsx';
+import PaginaMisInscripciones from './paginas/PaginaMisInscripciones.tsx';
+import { RutaProtegida } from './componentes/RutaProtegida.tsx';
 
 function App() {
   return (
@@ -19,6 +21,10 @@ function App() {
 
         <Route path="entrar" element={<PaginaEntrar />} />
         <Route path="registro" element={<PaginaRegistro />} />
+
+        <Route element={<RutaProtegida />}>
+          <Route path="mis-inscripciones" element={<PaginaMisInscripciones />}></Route>
+        </Route>
 
         <Route path="*" element={<NoEncontrado />} />
       </Route>

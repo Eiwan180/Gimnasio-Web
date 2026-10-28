@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, type ReactNode } from 'react';
+import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
 import type { Sesion } from '../tipos.ts';
 import { entrar as entrarApi, registrar as registrarApi } from '../servicios/sesion.ts';
 
@@ -45,6 +45,14 @@ export function SesionProvider({ children }: { children: ReactNode }) {
     localStorage.removeItem(CLAVE_SESION);
     setSesion(null);
   }
+
+  useEffect(() => {
+    const alterminar = () => setSesion(null);
+
+    window.addEventListener('sesion-terminada', alterminar);
+
+    return () => window.removeEventListener('sesion-terminada', alterminar);
+  }, []);
 
   return (
     <SesionContext.Provider value={{ sesion, entrar, registrar, salir }}>

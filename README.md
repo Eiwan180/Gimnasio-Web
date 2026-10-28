@@ -39,6 +39,47 @@
 
 ---
 
+# Práctica 17 - El Gimnasio: Rutas Protegidas e Inscripciones
+
+---
+
+## Ejercicio 1: Mis inscripciones, sólo con sesión
+
+### ¿La ruta protegida hace segura la aplicación? ¿Qué es lo que de verdad protege los datos?
+
+**No, la ruta protegida en el frontend no hace totalmente segura la aplicación por sí sola.**
+
+* **En el Frontend:** La protección de rutas en el cliente (como una redirección a `/entrar` si no hay token) es principalmente una medida de **UX (Experiencia de Usuario)**. Evita que el usuario navegue a vistas que no le corresponden, pero cualquier persona con conocimientos técnicos podría manipular el código del navegador o inspeccionar las peticiones.
+* **Lo que de verdad protege los datos es el Backend (API):** La seguridad real recae en la validación del **JSON Web Token (JWT)** o token de sesión en el servidor. Cada vez que el cliente realiza una petición HTTP (por ejemplo, `GET /inscripciones/mias`), el backend verifica que el token sea válido, no haya expirado y pertenezca a un usuario autenticado. Si no hay token o es inválido, la API responde con un código de estado `401 Unauthorized` y deniega el acceso a los datos.
+
+---
+
+## Ejercicio 2: Inscribirse y el 401
+
+### ¿Por qué no se manda el `miembroId` al inscribirse?
+
+El `miembroId` no se envía explícitamente en el cuerpo (body) ni en la URL de la petición por razones de **seguridad y diseño RESTful**:
+
+1. **Autenticación implícita mediante Token:** Al enviar la petición con el encabezado de autorización (`Authorization: Bearer <token>`), el backend decodifica el token JWT y extrae de forma segura la identidad del usuario (incluyendo su `miembroId`).
+2. **Prevención de Suplantación de Identidad (Spoofing):** Si el frontend enviara el `miembroId` manualmente en el cuerpo del mensaje, un usuario malintencionado podría modificar ese ID para inscribir a otras personas sin su consentimiento. Extraer el ID directamente del token firmado garantiza que la acción la realiza estrictamente el usuario autenticado.
+
+---
+
+### ¿Qué diferencia hay entre un 401 y un 403?
+
+Ambos son códigos de estado HTTP de error del cliente en cuanto a acceso, pero tienen significados distintos:
+
+* **`401 Unauthorized` (No autenticado / Token inválido):**
+  * **Significado:** El servidor no sabe quién es el usuario. Ocurre cuando no se envía un token de sesión, el token expiró o es inválido/falso.
+  * **Acción habitual:** El cliente debe redirigir al usuario al formulario de inicio de sesión (`/entrar`) para identificarse.
+
+* **`403 Forbidden` (No autorizado / Sin permisos):**
+  * **Significado:** El servidor **sí sabe quién es el usuario**, pero este **no tiene los permisos requeridos** para realizar la acción o acceder al recurso.
+  * **Ejemplo en la práctica:** Un usuario autenticado con rol de *Visitante* o *Entrenador* intenta realizar una acción reservada exclusivamente para la cuenta de un *Miembro* del gimnasio.
+  * **Acción habitual:** Mostrar un mensaje de error notificando al usuario que no cuenta con el perfil o los permisos suficientes para esta operación (sin necesidad de cerrar la sesión).
+
+---
+
 ## Ejecutar el proyecto
 
 Backend:
