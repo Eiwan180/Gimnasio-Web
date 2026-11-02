@@ -1,6 +1,14 @@
-import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
+import {
+  createContext,
+  useContext,
+  useEffect,
+  useState,
+  type ReactNode,
+} from 'react';
 import type { Sesion } from '../tipos.ts';
 import { entrar as entrarApi, registrar as registrarApi } from '../servicios/sesion.ts';
+import { EVENTO_SESION_TERMINADA } from '../servicios/api.ts';
+import { useInscripcionesStore } from '../store/useInscripcionesStore.ts';
 
 const CLAVE_SESION = 'gimnasio.sesion';
 
@@ -28,6 +36,27 @@ function leerSesion(): Sesion | null {
 export function SesionProvider({ children }: { children: ReactNode }) {
   const [sesion, setSesion] = useState<Sesion | null>(leerSesion);
 
+  useEffect(() => {
+    if (sesion) {
+      void useInscripcionesStore.getState().cargar();
+    } else {
+      useInscripcionesStore.getState().vaciar();
+    }
+  }, [sesion]);
+
+  useEffect(() => {
+    function cerrarSesion() {
+      useInscripcionesStore.getState().vaciar();
+      setSesion(null);
+    }
+
+    window.addEventListener(EVENTO_SESION_TERMINADA, cerrarSesion);
+
+    return () => {
+      window.removeEventListener(EVENTO_SESION_TERMINADA, cerrarSesion);
+    };
+  }, []);
+
   function guardar(nuevaSesion: Sesion) {
     localStorage.setItem(CLAVE_SESION, JSON.stringify(nuevaSesion));
     setSesion(nuevaSesion);
@@ -43,16 +72,9 @@ export function SesionProvider({ children }: { children: ReactNode }) {
 
   function salir() {
     localStorage.removeItem(CLAVE_SESION);
+    useInscripcionesStore.getState().vaciar();
     setSesion(null);
   }
-
-  useEffect(() => {
-    const alterminar = () => setSesion(null);
-
-    window.addEventListener('sesion-terminada', alterminar);
-
-    return () => window.removeEventListener('sesion-terminada', alterminar);
-  }, []);
 
   return (
     <SesionContext.Provider value={{ sesion, entrar, registrar, salir }}>

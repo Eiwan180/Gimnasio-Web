@@ -3,25 +3,44 @@ import type { Sesion } from '../tipos.ts';
 
 export const URL_API = import.meta.env.VITE_API_URL ?? 'http://localhost:3000';
 
+const CLAVE_SESION = 'gimnasio.sesion';
+export const EVENTO_SESION_TERMINADA = 'gimnasio:sesion-terminada';
+
 export const api = axios.create({
   baseURL: URL_API,
   timeout: 5000,
 });
 
 api.interceptors.request.use((config) => {
-  const guardada = localStorage.getItem('gimnasio.sesion');
+  const guardada = localStorage.getItem(CLAVE_SESION);
 
   if (guardada) {
     try {
       const sesion = JSON.parse(guardada) as Sesion;
       config.headers.Authorization = `Bearer ${sesion.token}`;
     } catch {
-      localStorage.removeItem('gimnasio.sesion');
+      localStorage.removeItem(CLAVE_SESION);
     }
   }
 
   return config;
 });
+
+api.interceptors.response.use(
+  (respuesta) => respuesta,
+  (error) => {
+    if (
+      axios.isAxiosError(error) &&
+      error.response?.status === 401 &&
+      error.config?.url !== '/auth/login'
+    ) {
+      localStorage.removeItem(CLAVE_SESION);
+      window.dispatchEvent(new Event(EVENTO_SESION_TERMINADA));
+    }
+
+    return Promise.reject(error);
+  },
+);
 
 export interface Sobre<T> {
   data: T;
@@ -38,27 +57,10 @@ export function mensajeDeError(e: unknown, generico: string): string {
     }
 
     const mensaje = e.response?.data?.message;
+
     if (Array.isArray(mensaje)) return mensaje.join('. ');
     if (typeof mensaje === 'string') return mensaje;
   }
 
   return generico;
 }
-
-export function estadoDeError(e: unknown): number | undefined {
-  return axios.isAxiosError(e) ? e.response?.status : undefined;
-}
-
-api.interceptors.response.use(
-  (respuesta) => respuesta,
-  (error) => {
-    if (axios.isAxiosError(error) && error.response?.status === 401 && localStorage.getItem('token')) {
-      localStorage.removeItem('token');
-      localStorage.removeItem('usuario');
-
-      window.dispatchEvent(new Event('sesion-terminada'));
-    }
-
-    return Promise.reject(error);
-  }
-)

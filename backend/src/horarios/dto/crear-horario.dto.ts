@@ -2,21 +2,21 @@ import { IsInt, IsNotEmpty, IsString, Matches, Min } from 'class-validator';
 
 export class CrearHorarioDto {
   @IsInt()
-  claseId: number;
+  claseId!: number;
 
   @IsString()
   @IsNotEmpty()
-  dia: string;
+  dia!: string;
 
   // HH:MM de 24 horas.
   @Matches(/^([01]\d|2[0-3]):[0-5]\d$/)
-  horaInicio: string;
+  horaInicio!: string;
 
   @IsInt()
   @Min(1)
-  cupoMaximo: number;
+  cupoMaximo!: number;
 
   @IsString()
   @IsNotEmpty()
-  entrenador: string;
+  entrenador!: string;
 }

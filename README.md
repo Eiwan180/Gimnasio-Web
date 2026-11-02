@@ -41,7 +41,6 @@
 
 # Práctica 17 - El Gimnasio: Rutas Protegidas e Inscripciones
 
----
 
 ## Ejercicio 1: Mis inscripciones, sólo con sesión
 
@@ -77,6 +76,32 @@ Ambos son códigos de estado HTTP de error del cliente en cuanto a acceso, pero 
   * **Significado:** El servidor **sí sabe quién es el usuario**, pero este **no tiene los permisos requeridos** para realizar la acción o acceder al recurso.
   * **Ejemplo en la práctica:** Un usuario autenticado con rol de *Visitante* o *Entrenador* intenta realizar una acción reservada exclusivamente para la cuenta de un *Miembro* del gimnasio.
   * **Acción habitual:** Mostrar un mensaje de error notificando al usuario que no cuenta con el perfil o los permisos suficientes para esta operación (sin necesidad de cerrar la sesión).
+
+---
+
+# Práctica 18: El gimnasio - Lazy Loading, el Build y Zustand
+
+
+## 1. Ejercicio 1: Partir por ruta y medir
+
+### ¿Cuánto se ahorró y por qué el ahorro es pequeño en esta aplicación?
+* **Ahorro estimado:** El ahorro en el tamaño del archivo principal (`bundle`) suele ser relativamente bajo (en una aplicación de este tamaño, el impacto en la reducción del archivo JS inicial suele rondar entre unos pocos kilobytes o un porcentaje menor al 30%).
+* **¿Por qué es pequeño?** En aplicaciones pequeñas o de práctica escolar, las páginas individuales no contienen dependencias masivas o lógica extremadamente pesada que justifique una fragmentación drástica. Gran parte del peso de la aplicación se concentra en las librerías base (como React, React Router, Zustand y estilos globales) que se cargan sí o sí en el paquete principal (`vendor` o `main`), por lo que dividir las vistas secundarias ofrece una ganancia marginal en este nivel de escala.
+
+### ¿Por qué falla la API si el preview corre en el puerto 4173?
+* **Error de CORS / Origen Cruzado:** El servidor backend (`gimnasio-backend`) por lo general está configurado para aceptar peticiones únicamente desde el origen donde corre el entorno de desarrollo habitual (por defecto, `http://localhost:5173`). Al usar el comando `vite preview`, la aplicación se levanta en el puerto **`4173`**. Si el servidor del backend no tiene permitido explícitamente este nuevo puerto en su política de CORS, el navegador bloqueará las peticiones HTTP por motivos de seguridad, arrojando un error de CORS.
+
+---
+
+## 2. Ejercicio 2: Un store para las inscripciones
+
+### ¿Cuándo conviene un contexto y cuándo un store?
+* **React Context:**
+  * **Cuándo conviene:** Para estados globales estáticos o que cambian con muy baja frecuencia (por ejemplo: el tema de la interfaz [modo oscuro/claro], el idioma de la aplicación, o los datos básicos de la sesión del usuario actual).
+  * **Por qué:** Es una herramienta nativa de React y fácil de implementar, pero su mayor inconveniente es que cualquier cambio en el valor del contexto provoca el re-renderizado de *todos* los componentes que lo consumen, lo que puede afectar el rendimiento si el estado se actualiza constantemente.
+* **Zustand Store:**
+  * **Cuándo conviene:** Para estados dinámicos, complejos, que cambian con frecuencia y son compartidos por múltiples componentes (por ejemplo: un carrito de compras, listados de inscripciones, estados de carga globales).
+  * **Por qué:** Es altamente eficiente porque permite usar selectores granulares. Los componentes solo se vuelven a renderizar cuando cambia específicamente la porción del estado a la que están suscritos, evitando renders innecesarios y manteniendo la aplicación optimizada.
 
 ---
 

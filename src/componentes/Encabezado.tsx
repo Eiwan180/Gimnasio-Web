@@ -1,5 +1,6 @@
 import { Link, NavLink } from 'react-router';
 import { useSesion } from '../sesion/SesionContext.tsx';
+import { useInscripcionesStore } from '../store/useInscripcionesStore.ts';
 
 function claseEnlace({ isActive }: { isActive: boolean }) {
   return isActive ? 'barra__enlace barra__enlace--activo' : 'barra__enlace';
@@ -7,6 +8,7 @@ function claseEnlace({ isActive }: { isActive: boolean }) {
 
 export function Encabezado() {
   const { sesion, salir } = useSesion();
+  const cantidad = useInscripcionesStore((estado) => estado.inscripciones.length);
 
   return (
     <header className="barra">
@@ -19,11 +21,14 @@ export function Encabezado() {
         <nav>
           <ul className="barra__enlaces">
             <li>
-              <NavLink to="/clases" className={claseEnlace}>Clases</NavLink>
+              <NavLink to="/clases" className={claseEnlace}>
+                Clases
+              </NavLink>
             </li>
             <li>
               <NavLink to="/mis-inscripciones" className={claseEnlace}>
                 Mis inscripciones
+                {sesion && <span className="barra__contador">{cantidad}</span>}
               </NavLink>
             </li>
           </ul>
@@ -33,12 +38,17 @@ export function Encabezado() {
           {sesion ? (
             <>
               <span className="barra__usuario">{sesion.usuario.nombre}</span>
-              <button className="boton boton--chico boton--secundario" onClick={salir}>
+              <button
+                className="boton boton--chico boton--secundario"
+                onClick={salir}
+              >
                 Salir
               </button>
             </>
           ) : (
-            <Link to="/entrar" className="boton boton--chico">Entrar</Link>
+            <Link to="/entrar" className="boton boton--chico">
+              Entrar
+            </Link>
           )}
         </div>
       </div>

@@ -8,21 +8,12 @@ export function PaginaClases() {
   const { clases, cargando, error, reintentar } = useClases();
 
   if (cargando) return <Cargando />;
-
-  if (error) {
-    return (
-      <MensajeError
-        mensaje={error}
-        onReintentar={reintentar}
-      />
-    );
-  }
+  if (error) return <MensajeError mensaje={error} onReintentar={reintentar} />;
 
   return (
     <>
       <section className="pagina__encabezado">
         <h1>Clases</h1>
-
         <p className="pagina__bajada">
           Elige una clase para ver sus horarios e inscribirte.
         </p>
@@ -39,22 +30,15 @@ export function PaginaClases() {
               className="tarjeta-clase__imagen"
               src={urlImagen(clase.imagen)}
               alt={clase.nombre}
+              loading="lazy"
             />
 
             <div className="tarjeta-clase__cuerpo">
-              <span
-                className={`etiqueta etiqueta--${clase.categoria}`}
-              >
+              <span className={`etiqueta etiqueta--${clase.categoria}`}>
                 {clase.categoria}
               </span>
-
-              <span className="tarjeta-clase__titulo">
-                {clase.nombre}
-              </span>
-
-              <span className="tarjeta-clase__meta">
-                {clase.duracionMin} min
-              </span>
+              <span className="tarjeta-clase__titulo">{clase.nombre}</span>
+              <span className="tarjeta-clase__meta">{clase.duracionMin} min</span>
             </div>
           </Link>
         ))}

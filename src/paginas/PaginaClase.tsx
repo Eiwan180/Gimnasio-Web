@@ -1,60 +1,70 @@
+import { useState } from 'react';
 import { Link, useLocation, useNavigate, useParams } from 'react-router';
 import { Cargando } from '../componentes/Cargando.tsx';
 import { MensajeError } from '../componentes/MensajeError.tsx';
 import { useClase } from '../hooks/useClase.ts';
-import { urlImagen, estadoDeError } from '../servicios/api.ts';
 import { useSesion } from '../sesion/SesionContext.tsx';
-import { useState } from 'react';
-
-interface Aviso {
-  mensaje: string;
-  tipo: 'exito' | 'error';
-}
+import { inscribirse } from '../servicios/gimnasio.ts';
+import { mensajeDeError, urlImagen } from '../servicios/api.ts';
+import { useInscripcionesStore } from '../store/useInscripcionesStore.ts';
 
 export function PaginaClase() {
   const { id } = useParams();
-  const navigate = useNavigate();
+  const navegar = useNavigate();
+  const ubicacion = useLocation();
+  const { sesion } = useSesion();
   const idClase = Number(id);
   const { clase, cargando, error, reintentar } = useClase(idClase);
 
-  const navegar = useNavigate();
+  const inscripciones = useInscripcionesStore((estado) => estado.inscripciones);
+  const cargarInscripciones = useInscripcionesStore((estado) => estado.cargar);
 
-  const ubicacion = useLocation();
+  const [aviso, setAviso] = useState<string | null>(null);
+  const [errorInscripcion, setErrorInscripcion] = useState<string | null>(null);
+  const [enviando, setEnviando] = useState<number | null>(null);
 
-  const usuario = useSesion();
+  async function inscribir(horarioId: number) {
+    if (!sesion) {
+      navegar('/entrar', {
+        state: { desde: ubicacion.pathname },
+      });
+      return;
+    }
 
-  const [aviso, setAviso] = useState<Aviso | null>(null);
+    setAviso(null);
+    setErrorInscripcion(null);
+    setEnviando(horarioId);
+
+    try {
+      await inscribirse(horarioId);
+      await cargarInscripciones();
+      setAviso('Inscripción realizada correctamente.');
+      reintentar();
+    } catch (e) {
+      setErrorInscripcion(
+        mensajeDeError(e, 'No se pudo realizar la inscripción.'),
+      );
+    } finally {
+      setEnviando(null);
+    }
+  }
 
   if (cargando) return <Cargando />;
   if (error) return <MensajeError mensaje={error} onReintentar={reintentar} />;
   if (!clase) return null;
 
-  async function inscribir(horarioId: number) {
-    if (!usuario) {
-      setAviso({ mensaje: 'Necesitas iniciar sesión para inscribirte.', tipo: 'error' });
-      return;
-    }
-
-    try {
-      await inscribir(horarioId);
-      navegar('/mis-inscripciones');
-    }catch (e) {
-      if (estadoDeError(e) === 409) {
-        setAviso({ tipo: 'error', mensaje: 'Ya te encuentras inscrito en esta clase.' });
-      }else {
-        setAviso({ tipo: 'error', mensaje: 'No se pudo completar la inscripcion' });
-      }
-    }
-  }
-
   return (
     <>
-      <Link to="/clases" className="detalle__volver">   
+      <Link to="/clases" className="detalle__volver">
         ← Todas las clases
       </Link>
 
+      {aviso && <p className="aviso aviso--exito">{aviso}</p>}
+      {errorInscripcion && (
+        <p className="aviso aviso--error">{errorInscripcion}</p>
+      )}
+
       <article className="detalle">
-        {aviso && <p role="status">{aviso.mensaje}</p>}
         <img
           className="detalle__imagen"
           src={urlImagen(clase.imagen)}
@@ -72,31 +82,42 @@ export function PaginaClase() {
           </p>
 
           <h2>Horarios</h2>
-          {aviso && <p className={`aviso aviso--${aviso.tipo}`}>{aviso.mensaje}</p>}
           <ul className="horarios">
-            {clase.horarios.map((horario) => (
-              <li className="horario" key={horario.id}>
-                <div>
-                  <div className="horario__dia">
-                    {horario.dia} · {horario.horaInicio}
-                  </div>
-                  <div className="horario__meta">
-                    {horario.entrenador} · {horario.disponibles} de {horario.cupoMaximo} lugares
-                  </div>
-                </div>
+            {clase.horarios.map((horario) => {
+              const inscrito = inscripciones.some(
+                (inscripcion) =>
+                  inscripcion.estado === 'confirmada' &&
+                  inscripcion.horario.id === horario.id,
+              );
 
-                {horario.disponibles === 0 ? (
-                  <span className="horario__lleno">Lleno</span>
-                ) : (
-                  <button
-                    className="boton boton--chico"
-                    onClick={() => inscribir(horario.id)}
-                  >
-                    Inscribirme
-                  </button>
-                )}
-              </li>
-            ))}
+              return (
+                <li className="horario" key={horario.id}>
+                  <div>
+                    <div className="horario__dia">
+                      {horario.dia} · {horario.horaInicio}
+                    </div>
+                    <div className="horario__meta">
+                      {horario.entrenador} · {horario.disponibles} de{' '}
+                      {horario.cupoMaximo} lugares
+                    </div>
+                  </div>
+
+                  {inscrito ? (
+                    <span className="horario__inscrito">Inscrito</span>
+                  ) : horario.disponibles === 0 ? (
+                    <span className="horario__lleno">Lleno</span>
+                  ) : (
+                    <button
+                      className="boton boton--chico"
+                      disabled={enviando === horario.id}
+                      onClick={() => void inscribir(horario.id)}
+                    >
+                      {enviando === horario.id ? 'Inscribiendo…' : 'Inscribirme'}
+                    </button>
+                  )}
+                </li>
+              );
+            })}
           </ul>
         </div>
       </article>
